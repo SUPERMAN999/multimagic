@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GENIUS Matrix - EN+RO Dual Language</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        }
+        .translating {
+            opacity: 0.6;
+        }
+        .editable-task {
+            cursor: text;
+        }
+        .editable-task:hover {
+            background-color: #f8fafc;
+        }
+        .dragging {
+            opacity: 0.4;
+            cursor: grabbing !important;
+        }
+        .drag-over {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6 !important;
+        }
+        .drag-handle {
+            cursor: grab;
+            opacity: 0.3;
+            transition: opacity 0.2s;
+        }
+        .drag-handle:hover {
+            opacity: 1;
+        }
+        .task-item {
+            cursor: grab;
+        }
+        .task-item:active {
+            cursor: grabbing;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // EXPANDED DICTIONARY
+        const dictionary = {
+            'en_to_ro': {
+                // Work related
+                'meeting': 'întâlnire',
+                'call': 'sună',
+                'email': 'email',
+                'send email': 'trimite email',
+                'urgent': 'urgent',
+                'important': 'important',
+                'deadline': 'termen limită',
+                'project': 'proiect',
+                'task': 'sarcină',
+                'work': 'muncă',
+                'report': 'raport',
+                'presentation': 'prezentare',
+                'review': 'revizuire',
+                'approve': 'aprobare',
+                'complete': 'completează',
+                'finish': 'termină',
+                'start': 'începe',
+                'schedule': 'programează',
+                'plan': 'planifică',
+                'organize': 'organizează',
+                'prepare': 'pregătește',
+                'submit': 'trimite',
+                'file': 'fișier',
+                'document': 'document',
+                'contract': 'contract',
+                'invoice': 'factură',
+                'budget': 'buget',
+                'expense': 'cheltuială',
+                'proposal': 'propunere',
+                'strategy': 'strategie',
+                'analysis': 'analiză',
+                
+                // Personal tasks
+                'buy groceries': 'cumpără alimente',
+                'groceries': 'alimente',
+                'shopping': 'cumpărături',
+                'buy': 'cumpără',
+                'sell': 'vinde',
+                'pay': 'plătește',
+                'pay bills': 'plătește facturile',
+                'bills': 'facturi',
+                'home': 'acasă',
+                'family': 'familie',
+                'kids': 'copii',
+                'children': 'copii',
+                'school': 'școală',
+                'homework': 'temă',
+                'clean': 'curăță',
+                'laundry': 'rufe',
+                'cook': 'gătește',
+                'dinner': 'cină',
+                'lunch': 'prânz',
+                'breakfast': 'micul dejun',
+                
+                // Health & appointments
+                'call doctor': 'sună doctorul',
+                'call the doctor': 'sună doctorul',
+                'go to the doctor': 'du-te la doctor',
+                'go to doctor': 'du-te la doctor',
+                'see the doctor': 'vezi doctorul',
+                'visit doctor': 'vizitează doctorul',
+                'doctor': 'doctor',
+                'dentist': 'dentist',
+                'appointment': 'programare',
+                'hospital': 'spital',
+                'pharmacy': 'farmacie',
+                'medicine': 'medicament',
+                'exercise': 'exercițiu',
+                'workout': 'antrenament',
+                'gym': 'sală',
+                'health': 'sănătate',
+                
+                // Communication
+                'call mom': 'sună mama',
+                'call dad': 'sună tata',
+                'text': 'mesaj',
+                'message': 'mesaj',
+                'reply': 'răspunde',
+                'respond': 'răspunde',
+                'contact': 'contactează',
+                'phone': 'telefon',
+                
+                // Actions
+                'fix': 'repară',
+                'repair': 'repară',
+                'update': 'actualizează',
+                'cancel': 'anulează',
+                'confirm': 'confirmă',
+                'book': 'rezervă',
+                'reserve': 'rezervă',
+                'order': 'comandă',
+                'return': 'returnează',
+                'exchange': 'schimbă',
+                'pickup': 'ridică',
+                'deliver': 'livrează',
+                'ship': 'expediază',
+                
+                // Time related
+                'today': 'astăzi',
+                'tomorrow': 'mâine',
+                'tonight': 'în seara asta',
+                'this week': 'săptămâna aceasta',
+                'next week': 'săptămâna viitoare',
+                'urgent task': 'sarcină urgentă',
+                'asap': 'cât mai curând',
+                
+                // Common phrases
+                'go to': 'du-te la',
+                'go to work': 'du-te la muncă',
+                'go home': 'du-te acasă',
+                'pick up': 'ridică',
+                'drop off': 'lasă',
+                'follow up': 'urmărește',
+                'check in': 'înregistrează-te',
+                'sign up': 'înscrie-te',
+                'log in': 'autentifică-te',
+                'back up': 'salvează'
+            },
+            'ro_to_en': {
+                'întâlnire': 'meeting',
+                'sună': 'call',
+                'email': 'email',
+                'trimite email': 'send email',
+                'urgent': 'urgent',
+                'important': 'important',
+                'termen limită': 'deadline',
+                'proiect': 'project',
+                'sarcină': 'task',
+                'muncă': 'work',
+                'raport': 'report',
+                'prezentare': 'presentation',
+                'revizuire': 'review',
+                'aprobare': 'approve',
+                'completează': 'complete',
+                'termină': 'finish',
+                'începe': 'start',
+                'programează': 'schedule',
+                'planifică': 'plan',
+                'organizează': 'organize',
+                'pregătește': 'prepare',
+                'trimite': 'submit',
+                'fișier': 'file',
+                'document': 'document',
+                'contract': 'contract',
+                'factură': 'invoice',
+                'buget': 'budget',
+                'cheltuială': 'expense',
+                'propunere': 'proposal',
+                'strategie': 'strategy',
+                'analiză': 'analysis',
+                'cumpără alimente': 'buy groceries',
+                'alimente': 'groceries',
+                'cumpărături': 'shopping',
+                'cumpără': 'buy',
+                'vinde': 'sell',
+                'plătește': 'pay',
+                'plătește facturile': 'pay bills',
+                'facturi': 'bills',
+                'acasă': 'home',
+                'familie': 'family',
+                'copii': 'kids',
+                'școală': 'school',
+                'temă': 'homework',
+                'curăță': 'clean',
+                'rufe': 'laundry',
+                'gătește': 'cook',
+                'cină': 'dinner',
+                'prânz': 'lunch',
+                'micul dejun': 'breakfast',
+                'sună doctorul': 'call doctor',
+                'du-te la doctor': 'go to the doctor',
+                'vezi doctorul': 'see the doctor',
+                'vizitează doctorul': 'visit doctor',
+                'doctor': 'doctor',
+                'dentist': 'dentist',
+                'programare': 'appointment',
+                'spital': 'hospital',
+                'farmacie': 'pharmacy',
+                'medicament': 'medicine',
+                'exercițiu': 'exercise',
+                'antrenament': 'workout',
+                'sală': 'gym',
+                'sănătate': 'health',
+                'sună mama': 'call mom',
+                'sună tata': 'call dad',
+                'mesaj': 'message',
+                'răspunde': 'reply',
+                'contactează': 'contact',
+                'telefon': 'phone',
+                'repară': 'fix',
+                'actualizează': 'update',
+                'anulează': 'cancel',
+                'confirmă': 'confirm',
+                'rezervă': 'book',
+                'comandă': 'order',
+                'returnează': 'return',
+                'schimbă': 'exchange',
+                'ridică': 'pickup',
+                'livrează': 'deliver',
+                'expediază': 'ship',
+                'astăzi': 'today',
+                'mâine': 'tomorrow',
+                'în seara asta': 'tonight',
+                'săptămâna aceasta': 'this week',
+                'săptămâna viitoare': 'next week',
+                'sarcină urgentă': 'urgent task',
+                'cât mai curând': 'asap',
+                'du-te la': 'go to',
+                'du-te la muncă': 'go to work',
+                'du-te acasă': 'go home',
+                'lasă': 'drop off',
+                'urmărește': 'follow up',
+                'înregistrează-te': 'check in',
+                'înscrie-te': 'sign up',
+                'autentifică-te': 'log in',
+                'salvează': 'back up'
+            }
+        };
+        async function translateText(text, targetLang, sourceLang = 'en') {
+            try {
+                const langMap = { 'en': 'en', 'ro': 'ro' };
+                const targetCode = langMap[targetLang];
+                const sourceCode = langMap[sourceLang];
+                
+                if (sourceCode === targetCode) return text;
+
+                const dictKey = `${sourceCode}_to_${targetCode}`;
+                const lowerText = text.toLowerCase().trim();
+                
+                if (dictionary[dictKey] && dictionary[dictKey][lowerText]) {
+                    console.log('✅ Dictionary:', text, '→', dictionary[dictKey][lowerText]);
+                    return dictionary[dictKey][lowerText];
+                }
+
+                const words = text.split(' ');
+                if (words.length > 1 && words.length <= 5) {
+                    const translatedWords = words.map(word => {
+                        const lowerWord = word.toLowerCase();
+                        return dictionary[dictKey]?.[lowerWord] || null;
+                    });
+                    
+                    if (translatedWords.every(w => w !== null)) {
+                        const result = translatedWords.join(' ');
+                        console.log('✅ Word-by-word:', text, '→', result);
+                        return result;
+                    }
+                }
+
+                try {
+                    const response = await fetch(
+                        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceCode}|${targetCode}`
+                    );
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.responseData && data.responseData.translatedText) {
+                            console.log('✅ API:', text, '→', data.responseData.translatedText);
+                            return data.responseData.translatedText;
+                        }
+                    }
+                } catch (e) {
+                    console.log('⚠️ API unavailable');
+                }
+
+                console.warn('❌ Translation failed:', text);
+                return `[${text}]`;
+                
+            } catch (error) {
+                console.error('Translation error:', error);
+                return text;
+            }
+        }
+
+        const translations = {
+            en: {
+                appTitle: "GENIUS Decision Matrix",
+                appSubtitle: "Get Every Notable Issue Expertly Sorted",
+                exportTasks: "Export Tasks",
+                importTasks: "Import Tasks",
+                clearAll: "Clear All",
+                clearConfirm: "Are you sure you want to clear all tasks? This cannot be undone.",
+                addTask: "Add Task",
+                addTo: "Add to:",
+                enterTask: "Enter your task or decision... (Press Enter to save, Shift+Enter for new line)",
+                cancel: "Cancel",
+                save: "Save",
+                edit: "Edit",
+                importSuccess: "Tasks imported successfully!",
+                importError: "Error importing file. Please make sure it's a valid JSON file.",
+                howToUse: "How to Use GENIUS Matrix",
+                urgent: "Urgent:",
+                urgentDesc: "Requires immediate attention, time-sensitive",
+                important: "Important:",
+                importantDesc: "Contributes to long-term goals and values",
+                proTip: "💡 Pro Tip:",
+                proTipText: "Focus most of your energy on the \"Schedule\" quadrant (Important but Not Urgent) to achieve long-term success and prevent tasks from becoming urgent crises.",
+                autoSave: "Your tasks are automatically saved. Drag tasks between or within quadrants to reorganize.",
+                translating: "Translating...",
+                editTranslation: "Click to edit translation",
+                dragHint: "Drag to reorder or move between quadrants",
+                voiceInput: "Voice Input",
+                listening: "Listening...",
+                speak: "Read Aloud",
+                stopSpeaking: "Stop",
+                quadrants: {
+                    urgent_important: {
+                        title: "Do First",
+                        subtitle: "Urgent & Important",
+                        description: "Critical tasks requiring immediate attention",
+                        action: "Do immediately"
+                    },
+                    not_urgent_important: {
+                        title: "Schedule",
+                        subtitle: "Not Urgent & Important",
+                        description: "Strategic work for long-term success",
+                        action: "Plan & schedule"
+                    },
+                    urgent_not_important: {
+                        title: "Delegate",
+                        subtitle: "Urgent & Not Important",
+                        description: "Tasks that can be handled by others",
+                        action: "Delegate or minimize"
+                    },
+                    not_urgent_not_important: {
+                        title: "Eliminate",
+                        subtitle: "Not Urgent & Not Important",
+                        description: "Low-value activities to avoid",
+                        action: "Eliminate or defer"
+                    }
+                }
+            },
+            ro: {
+                appTitle: "Matricea de Decizie GENIUS",
+                appSubtitle: "Gestionează Eficient Fiecare Notă Importantă și Urgentă Sortată",
+                exportTasks: "Exportă Sarcini",
+                importTasks: "Importă Sarcini",
+                clearAll: "Șterge Tot",
+                clearConfirm: "Sigur doriți să ștergeți toate sarcinile? Această acțiune nu poate fi anulată.",
+                addTask: "Adaugă Sarcină",
+                addTo: "Adaugă la:",
+                enterTask: "Introdu sarcina sau decizia ta... (Apasă Enter pentru salvare, Shift+Enter pentru linie nouă)",
+                cancel: "Anulează",
+                save: "Salvează",
+                edit: "Editează",
+                importSuccess: "Sarcini importate cu succes!",
+                importError: "Eroare la import. Asigură-te că este un fișier JSON valid.",
+                howToUse: "Cum să Folosești Matricea GENIUS",
+                urgent: "Urgent:",
+                urgentDesc: "Necesită atenție imediată, sensibil la timp",
+                important: "Important:",
+                importantDesc: "Contribuie la obiective și valori pe termen lung",
+                proTip: "💡 Sfat Pro:",
+                proTipText: "Concentrează majoritatea energiei tale pe cadranul \"Programează\" (Important dar Nu Urgent) pentru a obține succes pe termen lung și a preveni sarcinile să devină crize urgente.",
+                autoSave: "Sarcinile tale sunt salvate automat. Trage sarcinile între sau în cadrane pentru reorganizare.",
+                translating: "Se traduce...",
+                editTranslation: "Click pentru a edita traducerea",
+                dragHint: "Trage pentru a reorganiza sau muta între cadrane",
+                voiceInput: "Intrare Vocală",
+                listening: "Ascult...",
+                speak: "Citește cu Voce Tare",
+                stopSpeaking: "Oprește",
+                quadrants: {
+                    urgent_important: {
+                        title: "Fă Mai Întâi",
+                        subtitle: "Urgent și Important",
+                        description: "Sarcini critice care necesită atenție imediată",
+                        action: "Fă imediat"
+                    },
+                    not_urgent_important: {
+                        title: "Programează",
+                        subtitle: "Nu Urgent și Important",
+                        description: "Muncă strategică pentru succes pe termen lung",
+                        action: "Planifică și programează"
+                    },
+                    urgent_not_important: {
+                        title: "Delege",
+                        subtitle: "Urgent și Nu Important",
+                        description: "Sarcini care pot fi gestionate de alții",
+                        action: "Delege sau minimizează"
+                    },
+                    not_urgent_not_important: {
+                        title: "Elimină",
+                        subtitle: "Nu Urgent și Nu Important",
+                        description: "Activități de valoare scăzută de evitat",
+                        action: "Elimină sau amână"
+                    }
+                }
+            }
+        };
+        // Icons
+        const Plus = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>);
+        const Trash2 = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>);
+        const Edit2 = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>);
+        const AlertCircle = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>);
+        const Download = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>);
+        const Upload = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>);
+        const Globe = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>);
+        const GripVertical = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>);
+        const Mic = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>);
+        const Volume2 = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>);
+        const VolumeX = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>);
+
+        function DecisionMatrix() {
+            const [tasks, setTasks] = useState([]);
+            const [newTask, setNewTask] = useState('');
+            const [selectedQuadrant, setSelectedQuadrant] = useState(null);
+            const [language, setLanguage] = useState('en');
+            const [uiLanguage, setUiLanguage] = useState('en'); // NEW: Separate UI language toggle
+            const [isTranslating, setIsTranslating] = useState(false);
+            const [editingTask, setEditingTask] = useState(null);
+            const [editText, setEditText] = useState('');
+            const [draggedTask, setDraggedTask] = useState(null);
+            const [dragOverQuadrant, setDragOverQuadrant] = useState(null);
+            const [dragOverTask, setDragOverTask] = useState(null);
+            const [isListening, setIsListening] = useState(false);
+            const [isSpeaking, setIsSpeaking] = useState(false);
+            const recognitionRef = React.useRef(null); // Store recognition instance
+
+            // Initialize recognition once
+            React.useEffect(() => {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (SpeechRecognition && !recognitionRef.current) {
+                    const recognition = new SpeechRecognition();
+                    recognition.lang = 'en-US'; // Default to English
+                    recognition.interimResults = false;
+                    recognition.maxAlternatives = 1;
+                    recognition.continuous = false;
+
+                    recognition.onstart = () => {
+                        setIsListening(true);
+                        console.log('✅ Voice recognition started');
+                    };
+
+                    recognition.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        console.log('✅ Voice captured:', transcript);
+                        setNewTask(transcript);
+                    };
+
+                    recognition.onerror = (event) => {
+                        console.error('❌ Voice error:', event.error);
+                        setIsListening(false);
+                        if (event.error === 'no-speech') {
+                            alert('No speech detected. Please try again.');
+                        } else if (event.error !== 'aborted') {
+                            alert('Voice recognition error: ' + event.error);
+                        }
+                    };
+
+                    recognition.onend = () => {
+                        setIsListening(false);
+                        console.log('🏁 Voice recognition ended');
+                    };
+
+                    recognitionRef.current = recognition;
+                }
+            }, []);
+
+            useEffect(() => {
+                const saved = localStorage.getItem('geniusTasks');
+                if (saved) {
+                    const loadedTasks = JSON.parse(saved);
+                    // Initialize order for tasks that don't have it
+                    const tasksWithOrder = loadedTasks.map((task, index) => {
+                        if (task.order === undefined) {
+                            const quadrantTasks = loadedTasks.filter(t => t.quadrant === task.quadrant);
+                            const orderInQuadrant = quadrantTasks.indexOf(task);
+                            return { ...task, order: orderInQuadrant };
+                        }
+                        return task;
+                    });
+                    setTasks(tasksWithOrder);
+                } else {
+                    setTasks([]);
+                }
+                const savedLang = localStorage.getItem('geniusLanguage');
+                if (savedLang) {
+                    setLanguage(savedLang);
+                }
+            }, []);
+
+            useEffect(() => {
+                localStorage.setItem('geniusTasks', JSON.stringify(tasks));
+            }, [tasks]);
+
+            useEffect(() => {
+                localStorage.setItem('geniusLanguage', language);
+            }, [language]);
+
+            useEffect(() => {
+                const translateAllTasks = async () => {
+                    if (tasks.length === 0) return;
+                    setIsTranslating(true);
+                    const translatedTasks = await Promise.all(
+                        tasks.map(async (task) => {
+                            if (!task.translations || !task.translations[language]) {
+                                const sourceLang = task.sourceLang || 'en';
+                                const sourceText = task.translations?.[sourceLang] || task.text;
+                                const translated = await translateText(sourceText, language, sourceLang);
+                                return { ...task, translations: { ...task.translations, [language]: translated } };
+                            }
+                            return task;
+                        })
+                    );
+                    setTasks(translatedTasks);
+                    setIsTranslating(false);
+                };
+                translateAllTasks();
+            }, [language]);
+
+            const t = translations[uiLanguage]; // Use uiLanguage for interface buttons/text
+
+            // Voice Recognition
+            const startVoiceInput = () => {
+                if (!recognitionRef.current) {
+                    alert('Voice recognition is not supported in your browser. Please try Chrome, Edge, or Safari.');
+                    return;
+                }
+
+                if (isListening) {
+                    console.log('Already listening...');
+                    return;
+                }
+
+                try {
+                    // Update language if needed
+                    recognitionRef.current.lang = language === 'en' ? 'en-US' : 'ro-RO';
+                    recognitionRef.current.start();
+                    console.log('🎤 Starting voice recognition...');
+                } catch (err) {
+                    console.error('Failed to start recognition:', err);
+                    // If already started, stop and restart
+                    try {
+                        recognitionRef.current.stop();
+                        setTimeout(() => {
+                            recognitionRef.current.start();
+                        }, 100);
+                    } catch (e) {
+                        alert('Could not start voice recognition: ' + e.message);
+                    }
+                }
+            };
+
+            // Text to Speech
+            const speakTask = (taskText) => {
+                if ('speechSynthesis' in window) {
+                    // Cancel any ongoing speech
+                    window.speechSynthesis.cancel();
+                    
+                    const utterance = new SpeechSynthesisUtterance(taskText);
+                    utterance.lang = language === 'en' ? 'en-US' : 'ro-RO';
+                    utterance.rate = 1.0;
+                    utterance.pitch = 1.0;
+                    utterance.volume = 1.0;
+
+                    utterance.onstart = () => {
+                        setIsSpeaking(true);
+                        console.log('Speaking:', taskText);
+                    };
+
+                    utterance.onend = () => {
+                        setIsSpeaking(false);
+                    };
+
+                    utterance.onerror = (event) => {
+                        console.error('Speech error:', event.error);
+                        setIsSpeaking(false);
+                    };
+
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    alert('Text-to-speech is not supported in your browser.');
+                }
+            };
+
+            const stopSpeaking = () => {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    setIsSpeaking(false);
+                }
+            };
+
+            const quadrants = {
+                urgent_important: { 
+                    title: "Do First / Fă Mai Întâi",
+                    subtitle: "Urgent & Important / Urgent și Important",
+                    description: "Critical tasks requiring immediate attention / Sarcini critice care necesită atenție imediată",
+                    action: "Do immediately / Fă imediat",
+                    color: 'bg-red-50 border-red-200',
+                    headerColor: 'bg-red-500'
+                },
+                not_urgent_important: { 
+                    title: "Schedule / Programează",
+                    subtitle: "Not Urgent & Important / Nu Urgent și Important",
+                    description: "Strategic work for long-term success / Muncă strategică pentru succes pe termen lung",
+                    action: "Plan & schedule / Planifică și programează",
+                    color: 'bg-blue-50 border-blue-200',
+                    headerColor: 'bg-blue-500'
+                },
+                urgent_not_important: { 
+                    title: "Delegate / Delege",
+                    subtitle: "Urgent & Not Important / Urgent și Nu Important",
+                    description: "Tasks that can be handled by others / Sarcini care pot fi gestionate de alții",
+                    action: "Delegate or minimize / Delege sau minimizează",
+                    color: 'bg-yellow-50 border-yellow-200',
+                    headerColor: 'bg-yellow-500'
+                },
+                not_urgent_not_important: { 
+                    title: "Eliminate / Elimină",
+                    subtitle: "Not Urgent & Not Important / Nu Urgent și Nu Important",
+                    description: "Low-value activities to avoid / Activități de valoare scăzută de evitat",
+                    action: "Eliminate or defer / Elimină sau amână",
+                    color: 'bg-gray-50 border-gray-200',
+                    headerColor: 'bg-gray-500'
+                }
+            };
+
+            const addTask = async (quadrantId) => {
+                if (newTask.trim()) {
+                    // Detect input language (simple heuristic - could be improved)
+                    const inputLang = 'en'; // Default to English for now
+                    
+                    const newTaskObj = {
+                        id: Date.now(),
+                        text: newTask,
+                        quadrant: quadrantId,
+                        order: tasks.filter(t => t.quadrant === quadrantId).length,
+                        createdAt: new Date().toISOString(),
+                        translations: { 
+                            en: newTask,  // Store in EN initially
+                            ro: '[Translating...]'  // Placeholder
+                        },
+                        sourceLang: 'en'
+                    };
+                    
+                    setTasks([...tasks, newTaskObj]);
+                    setNewTask('');
+                    setSelectedQuadrant(null);
+                    
+                    // Translate to Romanian
+                    const roTranslation = await translateText(newTask, 'ro', 'en');
+                    setTasks(prev => prev.map(t => 
+                        t.id === newTaskObj.id 
+                            ? { ...t, translations: { en: newTask, ro: roTranslation } } 
+                            : t
+                    ));
+                }
+            };
+
+            const deleteTask = (taskId) => setTasks(tasks.filter(t => t.id !== taskId));
+            const startEditTask = (task) => { setEditingTask(task.id); setEditText(task.translations?.[language] || task.text); };
+            const saveEditTask = (taskId) => { setTasks(prev => prev.map(t => t.id === taskId ? { ...t, translations: { ...t.translations, [language]: editText } } : t)); setEditingTask(null); setEditText(''); };
+            const cancelEdit = () => { setEditingTask(null); setEditText(''); };
+
+            // Speak functions for dual language
+            const speakEN = (text) => {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel(); // Stop any ongoing speech
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'en-US';
+                    utterance.rate = 1.0;
+                    utterance.pitch = 1.0;
+                    window.speechSynthesis.speak(utterance);
+                }
+            };
+
+            const speakRO = (text) => {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel(); // Stop any ongoing speech
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'ro-RO';
+                    utterance.rate = 1.0;
+                    utterance.pitch = 1.0;
+                    window.speechSynthesis.speak(utterance);
+                }
+            };
+
+            const handleDragStart = (e, task) => {
+                setDraggedTask(task);
+                e.dataTransfer.effectAllowed = 'move';
+            };
+
+            const handleDragEnd = () => {
+                setDraggedTask(null);
+                setDragOverQuadrant(null);
+                setDragOverTask(null);
+            };
+
+            const handleDragOver = (e, quadrantId, overTask = null) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.dataTransfer.dropEffect = 'move';
+                setDragOverQuadrant(quadrantId);
+                setDragOverTask(overTask);
+            };
+
+            const handleDrop = (e, targetQuadrant, targetTask = null) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (!draggedTask) {
+                    console.log('No dragged task');
+                    return;
+                }
+
+                console.log('Drop triggered:', {
+                    draggedTask: draggedTask.text,
+                    targetQuadrant,
+                    targetTask: targetTask?.text || 'quadrant bottom',
+                    sameQuadrant: draggedTask.quadrant === targetQuadrant
+                });
+
+                let newTasks = [...tasks];
+                
+                if (targetTask && draggedTask.quadrant === targetQuadrant) {
+                    // Reorder within same quadrant
+                    console.log('Reordering within quadrant');
+                    const quadrantTasks = newTasks
+                        .filter(t => t.quadrant === targetQuadrant)
+                        .sort((a, b) => (a.order || 0) - (b.order || 0));
+                    
+                    const draggedIndex = quadrantTasks.findIndex(t => t.id === draggedTask.id);
+                    const targetIndex = quadrantTasks.findIndex(t => t.id === targetTask.id);
+                    
+                    console.log('Indexes:', { draggedIndex, targetIndex });
+                    
+                    // Remove dragged task
+                    const [removed] = quadrantTasks.splice(draggedIndex, 1);
+                    // Insert at target position
+                    quadrantTasks.splice(targetIndex, 0, removed);
+                    
+                    console.log('New order:', quadrantTasks.map(t => t.text));
+                    
+                    // Update order for all tasks in this quadrant
+                    quadrantTasks.forEach((task, index) => {
+                        const taskIndex = newTasks.findIndex(t => t.id === task.id);
+                        newTasks[taskIndex] = { ...newTasks[taskIndex], order: index };
+                    });
+                } else if (draggedTask.quadrant !== targetQuadrant) {
+                    // Move to different quadrant
+                    console.log('Moving to different quadrant');
+                    const targetQuadrantTasks = newTasks.filter(t => t.quadrant === targetQuadrant);
+                    const newOrder = targetTask 
+                        ? targetQuadrantTasks.findIndex(t => t.id === targetTask.id)
+                        : targetQuadrantTasks.length;
+                    
+                    newTasks = newTasks.map(t => 
+                        t.id === draggedTask.id 
+                            ? { ...t, quadrant: targetQuadrant, order: newOrder }
+                            : t
+                    );
+                    
+                    // Reorder all tasks in target quadrant
+                    const updatedTargetTasks = newTasks
+                        .filter(t => t.quadrant === targetQuadrant)
+                        .sort((a, b) => (a.order || 0) - (b.order || 0));
+                    
+                    updatedTargetTasks.forEach((task, index) => {
+                        const taskIndex = newTasks.findIndex(t => t.id === task.id);
+                        newTasks[taskIndex] = { ...newTasks[taskIndex], order: index };
+                    });
+                }
+                
+                console.log('Updating tasks state');
+                setTasks(newTasks);
+                setDraggedTask(null);
+                setDragOverQuadrant(null);
+                setDragOverTask(null);
+            };
+
+            const getTasksByQuadrant = (quadrantId) => {
+                return tasks
+                    .filter(t => t.quadrant === quadrantId)
+                    .sort((a, b) => (a.order || 0) - (b.order || 0));
+            };
+
+            const getTaskText = (task) => task.translations?.[language] || task.text;
+            const exportData = () => { const dataStr = JSON.stringify(tasks, null, 2); const dataBlob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(dataBlob); const link = document.createElement('a'); link.href = url; link.download = `genius-matrix-${new Date().toISOString().split('T')[0]}.json`; link.click(); };
+            const importData = (event) => { const file = event.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (e) => { try { const imported = JSON.parse(e.target.result); setTasks(imported); alert(t.importSuccess); } catch (error) { alert(t.importError); } }; reader.readAsText(file); } };
+            const clearAllTasks = () => { if (confirm(t.clearConfirm)) { setTasks([]); } };
+            const languageNames = { en: 'English', ro: 'Română' };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="text-center mb-8">
+                            <h1 className="text-5xl font-bold text-slate-800 mb-3">{t.appTitle}</h1>
+                            <p className="text-lg text-slate-600">{t.appSubtitle}</p>
+                            <div className="mt-2 flex items-center justify-center gap-3">
+                                <span className="text-sm font-semibold text-blue-600">🌍 Dual Language Tasks: English + Română</span>
+                                <div className="flex gap-1 bg-white rounded-lg shadow-sm p-1 border-2 border-blue-500">
+                                    <button 
+                                        onClick={() => setUiLanguage('en')}
+                                        className={`px-3 py-1 rounded text-sm font-medium transition-colors ${uiLanguage === 'en' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                                    >
+                                        EN
+                                    </button>
+                                    <button 
+                                        onClick={() => setUiLanguage('ro')}
+                                        className={`px-3 py-1 rounded text-sm font-medium transition-colors ${uiLanguage === 'ro' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                                    >
+                                        RO
+                                    </button>
+                                </div>
+                                <span className="text-xs text-slate-500">(UI Language)</span>
+                            </div>
+                            {isTranslating && <div className="mt-2 text-sm text-blue-600 animate-pulse">⏳ {t.translating}</div>}
+                            <div className="flex gap-3 justify-center items-center mt-6 flex-wrap">
+                                <button onClick={exportData} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2 text-sm font-medium"><Download />{t.exportTasks}</button>
+                                <label className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2 text-sm font-medium cursor-pointer"><Upload />{t.importTasks}<input type="file" accept=".json" onChange={importData} className="hidden" /></label>
+                                <button onClick={clearAllTasks} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium">{t.clearAll}</button>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6 mb-8">
+                            {Object.entries(quadrants).map(([key, quadrant]) => (
+                                <div key={key} className={`${quadrant.color} border-2 rounded-lg shadow-lg overflow-hidden transition-all hover:shadow-xl ${dragOverQuadrant === key ? 'drag-over' : ''}`} onDragOver={(e) => handleDragOver(e, key)} onDrop={(e) => handleDrop(e, key)}>
+                                    <div className={`${quadrant.headerColor} text-white p-5`}>
+                                        <h2 className="text-3xl font-bold mb-1">{quadrant.title}</h2>
+                                        <p className="text-sm opacity-90">{quadrant.subtitle}</p>
+                                    </div>
+                                    <div className="p-5">
+                                        <p className="text-sm text-slate-600 mb-3 italic">{quadrant.description}</p>
+                                        <div className="bg-white rounded px-3 py-2 mb-4 text-sm font-semibold text-slate-700">→ {quadrant.action}</div>
+                                        <div className="space-y-2 mb-4 min-h-[180px] max-h-[400px] overflow-y-auto">
+                                            {getTasksByQuadrant(key).map(task => (
+                                                <div key={task.id} draggable={editingTask !== task.id} onDragStart={(e) => handleDragStart(e, task)} onDragEnd={handleDragEnd} onDragOver={(e) => handleDragOver(e, key, task)} onDrop={(e) => handleDrop(e, key, task)} className={`bg-white rounded-lg p-3 shadow-sm flex items-start justify-between group hover:shadow-md transition-shadow task-item ${isTranslating ? 'translating' : ''} ${draggedTask?.id === task.id ? 'dragging' : ''} ${dragOverTask?.id === task.id ? 'border-t-2 border-blue-500' : ''}`}>
+                                                    {editingTask === task.id ? (
+                                                        <div className="flex-1 flex gap-2">
+                                                            <input type="text" value={editText} onChange={(e) => setEditText(e.target.value)} className="flex-1 px-2 py-1 border border-blue-300 rounded text-sm focus:outline-none focus:border-blue-500" autoFocus onKeyPress={(e) => { if (e.key === 'Enter') saveEditTask(task.id); if (e.key === 'Escape') cancelEdit(); }} />
+                                                            <button onClick={() => saveEditTask(task.id)} className="text-green-600 hover:text-green-700 text-xs px-2">{t.save}</button>
+                                                            <button onClick={cancelEdit} className="text-gray-600 hover:text-gray-700 text-xs px-2">{t.cancel}</button>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div className="drag-handle mr-2"><GripVertical /></div>
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <span className="text-xs text-blue-600 font-semibold">EN:</span>
+                                                                    <span className="text-sm text-slate-700 flex-1">{task.translations?.en || task.text}</span>
+                                                                    <button onClick={() => speakEN(task.translations?.en || task.text)} className="text-green-500 hover:text-green-700 p-1" title="Speak English">
+                                                                        <Volume2 />
+                                                                    </button>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-xs text-red-600 font-semibold">RO:</span>
+                                                                    <span className="text-sm text-slate-700 flex-1">{task.translations?.ro || '[No translation]'}</span>
+                                                                    <button onClick={() => speakRO(task.translations?.ro || task.text)} className="text-green-500 hover:text-green-700 p-1" title="Speak Romanian">
+                                                                        <Volume2 />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                                                                <button onClick={() => startEditTask(task)} className="text-blue-500 hover:text-blue-700 p-1" title="Edit"><Edit2 /></button>
+                                                                <button onClick={() => deleteTask(task.id)} className="text-red-400 hover:text-red-600 p-1"><Trash2 /></button>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <button onClick={() => setSelectedQuadrant(key)} className="w-full py-3 px-4 bg-white border-2 border-dashed border-slate-300 rounded-lg text-slate-600 hover:border-slate-400 hover:bg-slate-50 transition-all flex items-center justify-center gap-2"><Plus /><span className="text-sm font-medium">{t.addTask}</span></button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {selectedQuadrant && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                                <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full p-6">
+                                    <h3 className="text-2xl font-bold text-slate-800 mb-2">{t.addTo} {quadrants[selectedQuadrant].title}</h3>
+                                    <p className="text-sm text-slate-600 mb-4">{quadrants[selectedQuadrant].description}</p>
+                                    <div className="relative">
+                                        <textarea value={newTask} onChange={(e) => setNewTask(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addTask(selectedQuadrant); } }} placeholder={t.enterTask} className="w-full px-4 py-3 border-2 border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 mb-2 resize-none" rows="3" autoFocus />
+                                        <button
+                                            onClick={startVoiceInput}
+                                            disabled={isListening}
+                                            className={`mb-4 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors ${
+                                                isListening 
+                                                    ? 'bg-red-500 text-white animate-pulse' 
+                                                    : 'bg-purple-500 text-white hover:bg-purple-600'
+                                            }`}
+                                            title={t.voiceInput}
+                                        >
+                                            <Mic />
+                                            {isListening ? t.listening : t.voiceInput}
+                                        </button>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <button onClick={() => addTask(selectedQuadrant)} className="flex-1 bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors font-medium">{t.addTask}</button>
+                                        <button onClick={() => { setSelectedQuadrant(null); setNewTask(''); }} className="flex-1 bg-slate-200 text-slate-700 py-3 px-4 rounded-lg hover:bg-slate-300 transition-colors font-medium">{t.cancel}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="bg-white rounded-lg shadow-lg p-6 mt-8">
+                            <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><AlertCircle />{t.howToUse}</h3>
+                            <div className="grid grid-cols-2 gap-6 text-sm text-slate-600">
+                                <div><strong className="text-slate-800">{t.urgent}</strong> {t.urgentDesc}</div>
+                                <div><strong className="text-slate-800">{t.important}</strong> {t.importantDesc}</div>
+                                <div className="col-span-2 pt-4 border-t border-slate-200"><p className="italic text-base"><strong>{t.proTip}</strong> {t.proTipText}</p></div>
+                                <div className="col-span-2 pt-2 text-xs text-slate-500">✨ {t.autoSave}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<DecisionMatrix />, document.getElementById('root'));
+    </script>
+</body>
+</html>
