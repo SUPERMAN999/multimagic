@@ -687,50 +687,6 @@
                     alert('Could not start voice. Try again.');
                 }
             };
-                    console.log('🎙️ Audio capture ended');
-                };
-
-                recognition.onerror = (event) => {
-                    console.error('❌ Voice error:', event.error);
-                    setIsListening(false);
-                    
-                    let errorMessage = 'Voice recognition error: ';
-                    switch(event.error) {
-                        case 'no-speech':
-                            errorMessage += 'No speech detected. Please try again and speak clearly.';
-                            break;
-                        case 'audio-capture':
-                            errorMessage += 'Microphone not found or not working.';
-                            break;
-                        case 'not-allowed':
-                            errorMessage += 'Microphone access denied. Please allow microphone access in your browser settings.';
-                            break;
-                        case 'network':
-                            errorMessage += 'Network error. Voice recognition needs internet connection.';
-                            break;
-                        case 'aborted':
-                            errorMessage += 'Voice recognition was aborted.';
-                            break;
-                        default:
-                            errorMessage += event.error;
-                    }
-                    alert(errorMessage);
-                };
-
-                recognition.onend = () => {
-                    console.log('🏁 Voice recognition ended');
-                    setIsListening(false);
-                };
-
-                try {
-                    recognition.start();
-                    console.log('🚀 Recognition start command sent');
-                } catch (err) {
-                    console.error('❌ Failed to start recognition:', err);
-                    alert('Could not start voice recognition: ' + err.message);
-                    setIsListening(false);
-                }
-            };
 
             // Text to Speech
             // Speak functions for dual language
